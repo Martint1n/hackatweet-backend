@@ -46,26 +46,37 @@ router.post('/signin', function(req,res) {
     })
 })
 
+
 router.post('/twitt', function(req, res) {
-  const pattern = /#(\w+)/g;
+  const pattern = /#(\w+)/g; //check s'il y a des # dans le twitt
 
   if (pattern.test(req.body.twitt)){
     const newTwitt = new Twitt ({
-      author: req.body.author,
+      username: req.body.author,
       twitt: req.body.twitt,
       date: moment().format('MMM Do YY'),
     })
     newTwitt.save()
 
-    const newTwittWithHashtag = new TwittWithHashtag ({
-      author: req.body.author,
-      twitt: req.body.twitt,
-      hashtag: req.body.twitt.match(pattern),
-      date: moment().format('MMM Do YY'),
-    })
-    newTwittWithHashtag.save()
-    .then((data) => res.json(data))
-    .catch(error => console.error(error))
+    const hashtags = req.body.twitt.match(pattern)
+    for(let i=0; i < hashtags.length; i++){
+      TwittWithHashtag.findOne({ hashtag : hashtags[i] })
+      .then((data) => {
+        if(data){
+          res.json({ hash: hashtags, data: data, hashtag1: hashtags[i], reqBodyTwitt: req.body.twitt, dataTwitt: data.twitt })
+
+          data.twitt.push(req.body)
+          data.save();
+        }else {
+          const newTwittWithHashtag = new TwittWithHashtag ({
+            hashtag: hashtags[i],
+            twitt: [req.body],
+          })
+          newTwittWithHashtag.save()
+          .then(()=> {})
+        }
+      })
+    }
 
   }else {
     const newTwitt = new Twitt ({
