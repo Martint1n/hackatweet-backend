@@ -51,7 +51,22 @@ router.post('/signin', function(req,res) {
 router.post('/twitt/:username', function(req, res) {
   const pattern = /#(\w+)/g; //check s'il y a des # dans le twitt
 
-  if (pattern.test(req.body.twitt)){ //s'il y en à alors => 
+//-------------------------------------IF THERE IS NO # IN THE TWITT : ---------------------------------------
+
+  if (!pattern.test(req.body.twitt)){
+    const newTwitt = new Twitt ({
+      author: req.params.username,
+      twitt: req.body.twitt,
+      date: moment().format('MMM Do YY'),
+    })
+    newTwitt.save()
+    .then((data) => res.json({result: true, twitt: data.twitt, comment: 'No # in the twitt'}))
+    .catch(error => console.error(error))
+
+//-------------------------------------ELSE CREATE TWITT ---------------------------------------
+
+
+  }else{ //s'il y en à alors => 
     const newTwitt = new Twitt ({
       username: req.params.username,
       avatar: req.body.avatar,
@@ -61,45 +76,37 @@ router.post('/twitt/:username', function(req, res) {
       date: moment().format('MMM Do YY'),
     })
     newTwitt.save()
-    .then((data) => {
-    const _idTwitt = data._id
-    User.findOne({ username: req.params.username })
-    .then((data) => {
-      if(data)
-      console.log(data)
-      data.twitts.push(_idTwitt) 
-    })
-  }) //ajoute le twitt dans la collection users
-    const hashtags = req.body.twitt.match(pattern) //ajoute les # dans un tableau
-    for(let i=0; i < hashtags.length; i++){
-      TwittWithHashtag.findOne({ hashtag : hashtags[i] }) //pour chaque #, cherche les documents correspondant
-      .then((data) => {
-        if(data){ //si le # existe alors => 
-          console.log(data)
-          res.json({ hash: hashtags, data: data, hashtag1: hashtags[i], reqBodyTwitt: req.body.twitt, dataTwitt: data.twitt })
 
-          data.twitt.push(req.body._id) //ajoute le contenu du document twitt dans le document hashtag changee pour clé étrangère
-          data.save(); //addtoset
-        }else { //s'il n'a pas trouver de hashtag deja existant
-          const newTwittWithHashtag = new TwittWithHashtag ({
-            hashtag: hashtags[i],
-            twitt: [req.body._id], //changer pour chopper la clé étrangère
-          })
-          newTwittWithHashtag.save() //créeer un document avec le # et le contenu du twitt
-          .then(()=> {})
-        }
-      })
-    }
+//------------------------------------ADD THE TWITT TO DOCUMENT RELATED TO HASHTAGS ---------------------------------------
 
-  }else { //S'il n'y a pas de # dans le contenu du twitt alors => 
-    const newTwitt = new Twitt ({
-      author: req.params.username,
-      twitt: req.body.twitt,
-      date: moment().format('MMM Do YY'),
+
+    .then((data) => {
+      const _idTwitt = data._id
+      const hashtags = req.body.twitt.match(pattern) //ajoute les # dans un tableau
+      for(let i=0; i < hashtags.length; i++){
+        TwittWithHashtag.findOne({ hashtag : hashtags[i] }) //pour chaque #, cherche les documents correspondant
+        .then((data) => {
+          if(data){ //si le # existe alors => 
+            console.log(data)
+            data.twitt.push(_idTwitt) //ajoute le contenu du document twitt dans le document hashtag changee pour clé étrangère
+            data.save() //addtoset
+            res.json({ result: true, dochashtag: data })
+          }
+          
+          //-------------------------------------OR CREATE THE DOCUMENT RELATED TO HASHTAG ---------------------------------------
+
+          else { //s'il n'a pas trouver de hashtag deja existant
+            TwittWithHashtag.findOne({ hashtag : hashtags[i] })
+            const newTwittWithHashtag = new TwittWithHashtag ({
+              hashtag: hashtags[i],
+              twitt: [_idTwitt], //changer pour chopper la clé étrangère
+            })
+            newTwittWithHashtag.save() //créeer un document avec le # et le contenu du twitt
+            .then(() => res.json({ result: true, comment: 'create new document hashtag'}))
+          }
+        })
+      }
     })
-    newTwitt.save()
-    .then((data) => res.json(data))
-    .catch(error => console.error(error))
   }
 })
 
