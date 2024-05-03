@@ -54,6 +54,8 @@ router.post('/twitt/:username', function(req, res) {
   if (pattern.test(req.body.twitt)){ //s'il y en à alors => 
     const newTwitt = new Twitt ({
       username: req.params.username,
+      avatar: req.body.avatar,
+      firstname: req.body.firstname,
       twitt: req.body.twitt,
       hashtag: req.body.twitt.match(pattern),
       date: moment().format('MMM Do YY'),
@@ -99,6 +101,11 @@ router.post('/twitt/:username', function(req, res) {
     .then((data) => res.json(data))
     .catch(error => console.error(error))
   }
+})
+
+router.get('/twitt', function (req, res) {
+  Twitt.find()
+  .then(data => res.json(data))
 })
 
 
