@@ -5,7 +5,8 @@ const userSchema = mongoose.Schema({
     username: String,
     password: String,
     token: String,
-    avatar: {type: String, default: '../image/avatar.jpeg'},
+    twitts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'twitts' }],
+    avatar: {type: String, default: '/avatar.jpeg'},
 });
 
 const User = mongoose.model('users', userSchema);
